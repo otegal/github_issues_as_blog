@@ -87,6 +87,47 @@ export default {
   components: {
     Logo,
     VuetifyLogo
+  },
+  async asyncData ({ $axios }) {
+    const baseUrl = 'https://api.github.com/graphql'
+    const token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN
+    const owner = process.env.GITHUB_OWNER
+    const repositoryName = process.env.GITHUB_REPOSITORY_NAME
+    // TODO queryビルディング方法を変えたい
+    const postQuery = `query {
+      repository(owner:"${owner}", name:"${repositoryName}") {
+        name,
+        issues(last:3, states:OPEN) {
+          totalCount,
+          pageInfo {
+            endCursor
+            startCursor
+          }
+          nodes {
+            id,
+            title,
+            createdAt,
+            updatedAt,
+            author {
+              login
+            }
+          }
+        }
+      }
+    }`
+    await $axios.$post(baseUrl, {
+      query: postQuery
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(function (response) {
+        console.log(response)
+      })
+      .catch(function (response) {
+        console.log(response)
+      })
   }
 }
 </script>
