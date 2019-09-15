@@ -1,21 +1,26 @@
 <template>
-  <v-content>
-    <PostCard :posts="posts" />
-  </v-content>
+  <v-flex xs12>
+    <h2>{{ issue.title }}</h2>
+    <br>
+    <div v-html="$md.render(issueBody)"></div>
+  </v-flex>
 </template>
 
 <script>
-import PostCard from '~/components/PostCard.vue'
 import axios from 'axios'
 
 export default {
   data () {
     return {
-      posts: []
+      issueNumber: 0,
+      issue: {},
+      issueBody: ''
     }
   },
-  components: {
-    PostCard
+  asyncData (context) {
+    return {
+      issueNumber: context.query.issueNumber
+    }
   },
   mounted () {
     const baseUrl = 'https://api.github.com/graphql'
@@ -25,22 +30,9 @@ export default {
     // TODO queryビルディング方法を変えたい
     const postQuery = `query {
       repository(owner:"${owner}", name:"${repositoryName}") {
-        name,
-        issues(last:3, states:OPEN) {
-          totalCount,
-          pageInfo {
-            endCursor
-            startCursor
-          }
-          nodes {
-            number,
-            title,
-            createdAt,
-            updatedAt,
-            author {
-              login
-            }
-          }
+        issue(number:${this.issueNumber}) {
+          title,
+          body
         }
       }
     }`
@@ -52,8 +44,11 @@ export default {
       }
     })
       .then((response) => {
-        console.log(response.data.data.repository.issues.nodes)
-        this.posts = response.data.data.repository.issues.nodes
+        console.log(response.data)
+        this.issue = response.data.data.repository.issue
+        // bodyはこれで登録しないとString型を$md.renderに渡せていないよエラーが出るための暫定対応
+        this.issueBody = response.data.data.repository.issue.body
+        console.log(this.issue)
       })
       .catch(() => {
         console.log('Github APIのエラー')
